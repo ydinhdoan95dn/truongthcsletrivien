@@ -121,6 +121,46 @@ if ($tuan_id > 0) {
         $stats = $statsResult;
     }
 }
+
+// ============================================================
+// XỬ LÝ LƯU CẤU HÌNH HIỂN THỊ HOME
+// ============================================================
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'save_home_config') {
+    $mode = sanitize($_POST['home_week_display_mode']);
+    $manual_week_id = intval($_POST['home_week_id']);
+
+    // Cập nhật hoặc thêm mới cấu hình
+    $configs = [
+        'home_week_display_mode' => $mode,
+        'home_week_id' => $manual_week_id
+    ];
+
+    foreach ($configs as $ma => $gt) {
+        $stmtCheck = $conn->prepare("SELECT id FROM cau_hinh WHERE ma_cau_hinh = ?");
+        $stmtCheck->execute([$ma]);
+        if ($stmtCheck->fetch()) {
+            $stmtUpd = $conn->prepare("UPDATE cau_hinh SET gia_tri = ? WHERE ma_cau_hinh = ?");
+            $stmtUpd->execute([$gt, $ma]);
+        } else {
+            $stmtIns = $conn->prepare("INSERT INTO cau_hinh (ma_cau_hinh, gia_tri, mo_ta, nhom, loai_du_lieu) VALUES (?, ?, ?, 'ranking', 'text')");
+            $mo_ta = ($ma == 'home_week_display_mode') ? 'Chế độ hiển thị tuần ở Trang chủ' : 'ID Tuần hiển thị thủ công ở Trang chủ';
+            $stmtIns->execute([$ma, $gt, $mo_ta]);
+        }
+    }
+    
+    $_SESSION['success_message'] = 'Đã lưu cài đặt hiển thị trang chủ!';
+    header("Location: tuan.php?tuan=$tuan_id&khoi=$khoi_filter");
+    exit;
+}
+
+// Lấy cấu hình hiện tại
+$homeMode = 'auto';
+$homeWeekId = 0;
+$stmtCfg = $conn->query("SELECT ma_cau_hinh, gia_tri FROM cau_hinh WHERE ma_cau_hinh IN ('home_week_display_mode', 'home_week_id')");
+while ($row = $stmtCfg->fetch()) {
+    if ($row['ma_cau_hinh'] == 'home_week_display_mode') $homeMode = $row['gia_tri'];
+    if ($row['ma_cau_hinh'] == 'home_week_id') $homeWeekId = $row['gia_tri'];
+}
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -222,12 +262,22 @@ if ($tuan_id > 0) {
                             <?php echo PAGE_TITLE; ?>
                         </h1>
                         <div>
+                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#homeConfigModal">
+                                <i class="fas fa-home"></i> Cài đặt Home
+                            </button>
                             <a href="../duyet_diem/index.php" class="btn btn-outline-secondary">
                                 <i class="fas fa-check-circle"></i> Duyệt điểm
                             </a>
                         </div>
                     </div>
                 </div>
+
+                <?php if (isset($_SESSION['success_message'])): ?>
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <i class="fas fa-check-circle"></i> <?php echo $_SESSION['success_message']; unset($_SESSION['success_message']); ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                <?php endif; ?>
 
                 <!-- Filter -->
                 <div class="card shadow-sm mb-4">
@@ -522,8 +572,61 @@ if ($tuan_id > 0) {
         </main>
     </div>
 
+    <div class="modal fade" id="homeConfigModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Cài đặt hiển thị Trang chủ</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="POST">
+                    <input type="hidden" name="action" value="save_home_config">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Chế độ hiển thị</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="home_week_display_mode" id="mode_auto" value="auto" <?php echo $homeMode == 'auto' ? 'checked' : ''; ?>>
+                                <label class="form-check-label" for="mode_auto">
+                                    Tự động (Lấy tuần vừa kết thúc gần nhất)
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="home_week_display_mode" id="mode_manual" value="manual" <?php echo $homeMode == 'manual' ? 'checked' : ''; ?>>
+                                <label class="form-check-label" for="mode_manual">
+                                    Thủ công (Chọn một tuần cố định)
+                                </label>
+                            </div>
+                        </div>
+
+                        <div id="manual_select_group" class="mb-3" style="display: <?php echo $homeMode == 'manual' ? 'block' : 'none'; ?>;">
+                            <label class="form-label fw-bold">Chọn tuần hiển thị</label>
+                            <select name="home_week_id" class="form-select">
+                                <?php foreach ($danhSachTuan as $tuan): ?>
+                                    <option value="<?php echo $tuan['id']; ?>" <?php echo $homeWeekId == $tuan['id'] ? 'selected' : ''; ?>>
+                                        Tuần <?php echo $tuan['so_tuan']; ?> (<?php echo date('d/m', strtotime($tuan['ngay_bat_dau'])); ?> - <?php echo date('d/m', strtotime($tuan['ngay_ket_thuc'])); ?>)
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                        <button type="submit" class="btn btn-primary">Lưu cài đặt</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // Toggle manual select based on radio button
+        document.querySelectorAll('input[name="home_week_display_mode"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                document.getElementById('manual_select_group').style.display = (this.value === 'manual') ? 'block' : 'none';
+            });
+        });
+
         function exportExcel() {
             // TODO: Implement Excel export
             alert('Chức năng xuất Excel sẽ được triển khai sau');

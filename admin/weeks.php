@@ -147,6 +147,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $message = 'Xóa học kỳ thành công!';
         $messageType = 'success';
+    } elseif ($action === 'edit_week') {
+        $weekId = intval($_POST['week_id']);
+        $tenTuan = sanitize($_POST['ten_tuan']);
+        $soTuan = intval($_POST['so_tuan']);
+        $ngayBatDau = $_POST['ngay_bat_dau'];
+        $ngayKetThuc = $_POST['ngay_ket_thuc'];
+        $autoFollow = isset($_POST['auto_follow']) ? true : false;
+
+        // Cập nhật tuần hiện tại
+        $stmt = $conn->prepare("UPDATE tuan_hoc SET ten_tuan = ?, so_tuan = ?, ngay_bat_dau = ?, ngay_ket_thuc = ? WHERE id = ?");
+        $stmt->execute(array($tenTuan, $soTuan, $ngayBatDau, $ngayKetThuc, $weekId));
+
+        if ($autoFollow) {
+            // Lấy học kỳ của tuần này để tìm các tuần phía sau
+            $stmtT = $conn->prepare("SELECT hoc_ky_id FROM tuan_hoc WHERE id = ?");
+            $stmtT->execute(array($weekId));
+            $hocKyId = $stmtT->fetchColumn();
+
+            // Lấy danh sách các tuần phía sau (số tuần lớn hơn)
+            $stmtNext = $conn->prepare("SELECT * FROM tuan_hoc WHERE hoc_ky_id = ? AND so_tuan > ? ORDER BY so_tuan ASC");
+            $stmtNext->execute(array($hocKyId, $soTuan));
+            $nextWeeks = $stmtNext->fetchAll();
+
+            $currentEndDate = new DateTime($ngayKetThuc);
+            foreach ($nextWeeks as $nextWeek) {
+                $nextStart = clone $currentEndDate;
+                $nextStart->modify('+1 day');
+
+                $nextEnd = clone $nextStart;
+                $nextEnd->modify('+6 days');
+
+                $stmtUpd = $conn->prepare("UPDATE tuan_hoc SET ngay_bat_dau = ?, ngay_ket_thuc = ? WHERE id = ?");
+                $stmtUpd->execute(array($nextStart->format('Y-m-d'), $nextEnd->format('Y-m-d'), $nextWeek['id']));
+
+                $currentEndDate = $nextEnd;
+            }
+            $message = 'Cập nhật tuần và các tuần tiếp theo thành công!';
+        } else {
+            $message = 'Cập nhật tuần thành công!';
+        }
+        $messageType = 'success';
     }
 }
 
@@ -191,6 +232,7 @@ $pageTitle = 'Quản lý tuần học';
 ?>
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -201,9 +243,22 @@ $pageTitle = 'Quản lý tuần học';
     <script src="https://unpkg.com/feather-icons"></script>
     <link rel="stylesheet" href="<?php echo BASE_URL; ?>/assets/css/style.css">
     <style>
-        .alert { padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; font-weight: 600; }
-        .alert-success { background: rgba(16, 185, 129, 0.1); color: #10B981; }
-        .alert-error { background: rgba(239, 68, 68, 0.1); color: #EF4444; }
+        .alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .alert-success {
+            background: rgba(16, 185, 129, 0.1);
+            color: #10B981;
+        }
+
+        .alert-error {
+            background: rgba(239, 68, 68, 0.1);
+            color: #EF4444;
+        }
 
         .semester-tabs {
             display: flex;
@@ -211,6 +266,7 @@ $pageTitle = 'Quản lý tuần học';
             margin-bottom: 24px;
             flex-wrap: wrap;
         }
+
         .semester-tab {
             padding: 10px 20px;
             border-radius: 12px;
@@ -220,17 +276,21 @@ $pageTitle = 'Quản lý tuần học';
             font-weight: 600;
             transition: all 0.2s;
         }
+
         .semester-tab:hover {
             border-color: #667eea;
         }
+
         .semester-tab.active {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border-color: transparent;
         }
+
         .semester-tab.is-active-semester {
             position: relative;
         }
+
         .semester-tab.is-active-semester::after {
             content: '✓';
             position: absolute;
@@ -252,44 +312,53 @@ $pageTitle = 'Quản lý tuần học';
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 16px;
         }
+
         .week-card {
             background: white;
             border-radius: 16px;
             padding: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
             border: 2px solid transparent;
             transition: all 0.2s;
         }
+
         .week-card:hover {
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
+
         .week-card.current {
             border-color: #10B981;
-            background: linear-gradient(to bottom right, rgba(16,185,129,0.05), white);
+            background: linear-gradient(to bottom right, rgba(16, 185, 129, 0.05), white);
         }
+
         .week-card.past {
             opacity: 0.7;
         }
+
         .week-header {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
             margin-bottom: 12px;
         }
+
         .week-title {
             font-size: 1.1rem;
             font-weight: 700;
             color: #1F2937;
         }
+
         .week-number {
             font-size: 0.75rem;
             color: #9CA3AF;
         }
+
         .week-date {
             font-size: 0.85rem;
             color: #6B7280;
             margin-bottom: 12px;
         }
+
         .week-status {
             display: inline-block;
             padding: 4px 12px;
@@ -297,14 +366,27 @@ $pageTitle = 'Quản lý tuần học';
             font-size: 0.75rem;
             font-weight: 600;
         }
-        .status-0 { background: #F3F4F6; color: #6B7280; }
-        .status-1 { background: rgba(16,185,129,0.1); color: #10B981; }
-        .status-2 { background: rgba(107,114,128,0.1); color: #6B7280; }
+
+        .status-0 {
+            background: #F3F4F6;
+            color: #6B7280;
+        }
+
+        .status-1 {
+            background: rgba(16, 185, 129, 0.1);
+            color: #10B981;
+        }
+
+        .status-2 {
+            background: rgba(107, 114, 128, 0.1);
+            color: #6B7280;
+        }
 
         .week-actions {
             display: flex;
             gap: 8px;
             margin-top: 12px;
+            align-items: center;
         }
 
         .action-bar {
@@ -320,17 +402,20 @@ $pageTitle = 'Quản lý tuần học';
             gap: 16px;
             margin-bottom: 24px;
         }
+
         .stat-card {
             background: white;
             border-radius: 12px;
             padding: 16px;
             text-align: center;
         }
+
         .stat-value {
             font-size: 1.5rem;
             font-weight: 700;
             color: #1F2937;
         }
+
         .stat-label {
             font-size: 0.75rem;
             color: #9CA3AF;
@@ -338,6 +423,7 @@ $pageTitle = 'Quản lý tuần học';
         }
     </style>
 </head>
+
 <body>
     <div class="admin-layout">
         <?php include 'includes/sidebar.php'; ?>
@@ -358,7 +444,7 @@ $pageTitle = 'Quản lý tuần học';
             <div class="semester-tabs">
                 <?php foreach ($hocKyList as $hk): ?>
                     <a href="?hk=<?php echo $hk['id']; ?>"
-                       class="semester-tab <?php echo $selectedSemester == $hk['id'] ? 'active' : ''; ?> <?php echo $hk['trang_thai'] == 1 ? 'is-active-semester' : ''; ?>">
+                        class="semester-tab <?php echo $selectedSemester == $hk['id'] ? 'active' : ''; ?> <?php echo $hk['trang_thai'] == 1 ? 'is-active-semester' : ''; ?>">
                         <?php echo htmlspecialchars($hk['ten_hoc_ky']); ?> - <?php echo htmlspecialchars($hk['nam_hoc']); ?>
                     </a>
                 <?php endforeach; ?>
@@ -386,7 +472,8 @@ $pageTitle = 'Quản lý tuần học';
                             <?php
                             $activeTuans = 0;
                             foreach ($tuanList as $t) {
-                                if ($t['trang_thai'] == 1) $activeTuans++;
+                                if ($t['trang_thai'] == 1)
+                                    $activeTuans++;
                             }
                             echo $activeTuans;
                             ?>
@@ -398,7 +485,8 @@ $pageTitle = 'Quản lý tuần học';
                             <?php
                             $pastTuans = 0;
                             foreach ($tuanList as $t) {
-                                if ($t['trang_thai'] == 2) $pastTuans++;
+                                if ($t['trang_thai'] == 2)
+                                    $pastTuans++;
                             }
                             echo $pastTuans;
                             ?>
@@ -420,7 +508,8 @@ $pageTitle = 'Quản lý tuần học';
                             <i data-feather="check-circle"></i> Kích hoạt học kỳ này
                         </button>
                     <?php endif; ?>
-                    <button class="btn btn-ghost" style="color: #EF4444;" onclick="deleteSemester(<?php echo $selectedSemester; ?>)">
+                    <button class="btn btn-ghost" style="color: #EF4444;"
+                        onclick="deleteSemester(<?php echo $selectedSemester; ?>)">
                         <i data-feather="trash-2"></i> Xóa học kỳ
                     </button>
                 </div>
@@ -461,17 +550,26 @@ $pageTitle = 'Quản lý tuần học';
                                 </div>
 
                                 <div class="week-date">
-                                    📆 <?php echo date('d/m', strtotime($tuan['ngay_bat_dau'])); ?> - <?php echo date('d/m/Y', strtotime($tuan['ngay_ket_thuc'])); ?>
+                                    📆 <?php echo date('d/m', strtotime($tuan['ngay_bat_dau'])); ?> -
+                                    <?php echo date('d/m/Y', strtotime($tuan['ngay_ket_thuc'])); ?>
                                 </div>
 
                                 <div class="week-actions">
                                     <select class="form-input" style="flex: 1; padding: 8px 12px; font-size: 0.85rem;"
-                                            onchange="updateWeekStatus(<?php echo $tuan['id']; ?>, this.value)">
-                                        <option value="0" <?php echo $tuan['trang_thai'] == 0 ? 'selected' : ''; ?>>Chưa bắt đầu</option>
-                                        <option value="1" <?php echo $tuan['trang_thai'] == 1 ? 'selected' : ''; ?>>Đang diễn ra</option>
-                                        <option value="2" <?php echo $tuan['trang_thai'] == 2 ? 'selected' : ''; ?>>Đã kết thúc</option>
+                                        onchange="updateWeekStatus(<?php echo $tuan['id']; ?>, this.value)">
+                                        <option value="0" <?php echo $tuan['trang_thai'] == 0 ? 'selected' : ''; ?>>Chưa bắt đầu
+                                        </option>
+                                        <option value="1" <?php echo $tuan['trang_thai'] == 1 ? 'selected' : ''; ?>>Đang diễn ra
+                                        </option>
+                                        <option value="2" <?php echo $tuan['trang_thai'] == 2 ? 'selected' : ''; ?>>Đã kết thúc
+                                        </option>
                                     </select>
-                                    <button class="btn btn-ghost btn-sm" style="color: #EF4444;" onclick="deleteWeek(<?php echo $tuan['id']; ?>)">
+                                    <button class="btn btn-ghost btn-sm" onclick='editWeek(<?php echo json_encode($tuan); ?>)'
+                                        title="Sửa ngày">
+                                        <i data-feather="edit-2"></i>
+                                    </button>
+                                    <button class="btn btn-ghost btn-sm" style="color: #EF4444;"
+                                        onclick="deleteWeek(<?php echo $tuan['id']; ?>)">
                                         <i data-feather="trash-2"></i>
                                     </button>
                                 </div>
@@ -507,8 +605,8 @@ $pageTitle = 'Quản lý tuần học';
                 </div>
                 <div class="form-group">
                     <label class="form-label">Năm học</label>
-                    <input type="text" name="nam_hoc" id="semester_nam_hoc" class="form-input" required placeholder="VD: 2024-2025"
-                           value="<?php echo date('Y') . '-' . (date('Y') + 1); ?>">
+                    <input type="text" name="nam_hoc" id="semester_nam_hoc" class="form-input" required
+                        placeholder="VD: 2024-2025" value="<?php echo date('Y') . '-' . (date('Y') + 1); ?>">
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                     <div class="form-group">
@@ -536,7 +634,8 @@ $pageTitle = 'Quản lý tuần học';
         } else {
             $maxWeek = 0;
             foreach ($tuanList as $t) {
-                if ($t['so_tuan'] > $maxWeek) $maxWeek = $t['so_tuan'];
+                if ($t['so_tuan'] > $maxWeek)
+                    $maxWeek = $t['so_tuan'];
             }
             $nextWeekNum = $maxWeek + 1;
         }
@@ -547,9 +646,10 @@ $pageTitle = 'Quản lý tuần học';
             <button class="modal-close" onclick="closeAddWeekModal()">&times;</button>
             <h3 class="modal-title">Thêm tuần học</h3>
             <?php if ($selectedHK && strpos($selectedHK['ten_hoc_ky'], '2') !== false): ?>
-            <div style="background: #FEF3C7; border-radius: 8px; padding: 12px; margin-bottom: 16px; font-size: 0.9rem; color: #92400E;">
-                ℹ️ Học kỳ 2 bắt đầu từ tuần 19 (tiếp nối từ học kỳ 1)
-            </div>
+                <div
+                    style="background: #FEF3C7; border-radius: 8px; padding: 12px; margin-bottom: 16px; font-size: 0.9rem; color: #92400E;">
+                    ℹ️ Học kỳ 2 bắt đầu từ tuần 19 (tiếp nối từ học kỳ 1)
+                </div>
             <?php endif; ?>
             <form method="POST">
                 <input type="hidden" name="action" value="add_week">
@@ -558,12 +658,12 @@ $pageTitle = 'Quản lý tuần học';
                     <div class="form-group">
                         <label class="form-label">Số tuần</label>
                         <input type="number" name="so_tuan" id="add_so_tuan" class="form-input" required min="1"
-                               value="<?php echo $nextWeekNum; ?>" onchange="updateTenTuan()">
+                            value="<?php echo $nextWeekNum; ?>" onchange="updateTenTuan()">
                     </div>
                     <div class="form-group">
                         <label class="form-label">Tên tuần</label>
                         <input type="text" name="ten_tuan" id="add_ten_tuan" class="form-input" required
-                               value="Tuần <?php echo $nextWeekNum; ?>">
+                            value="Tuần <?php echo $nextWeekNum; ?>">
                     </div>
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
@@ -577,6 +677,60 @@ $pageTitle = 'Quản lý tuần học';
                     </div>
                 </div>
                 <button type="submit" class="btn btn-primary" style="width: 100%;">Thêm tuần</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Week Modal -->
+    <div id="editWeekModal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeEditWeekModal()">&times;</button>
+            <h3 class="modal-title">Chỉnh sửa tuần học</h3>
+            <form method="POST" id="editWeekForm">
+                <input type="hidden" name="action" value="edit_week">
+                <input type="hidden" name="week_id" id="edit_week_id">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label">Số tuần</label>
+                        <input type="number" name="so_tuan" id="edit_so_tuan" class="form-input" required min="1">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Tên tuần</label>
+                        <input type="text" name="ten_tuan" id="edit_ten_tuan" class="form-input" required>
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label">Ngày bắt đầu</label>
+                        <input type="date" name="ngay_bat_dau" id="edit_ngay_bat_dau" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Ngày kết thúc</label>
+                        <input type="date" name="ngay_ket_thuc" id="edit_ngay_ket_thuc" class="form-input" required>
+                    </div>
+                </div>
+
+                <div class="form-group"
+                    style="background: #FFFBEB; border: 1px solid #FEF3C7; padding: 12px; border-radius: 8px; margin-bottom: 20px;">
+                    <label
+                        style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer; margin-bottom: 0;">
+                        <input type="checkbox" name="auto_follow" id="edit_auto_follow" checked
+                            style="width: 18px; height: 18px; margin-top: 2px;">
+                        <div>
+                            <span style="font-weight: 700; color: #92400E; display: block;">Tự động cập nhật các tuần
+                                sau</span>
+                            <span style="font-size: 0.8rem; color: #B45309;">Nếu chọn, các tuần kế tiếp sẽ được tự động
+                                dời ngày theo tuần này.</span>
+                        </div>
+                    </label>
+                </div>
+
+                <div id="auto_follow_notice"
+                    style="display: none; color: #EF4444; font-size: 0.85rem; margin-bottom: 15px; font-weight: 500;">
+                    ⚠️ Cảnh báo: Các tuần học phía sau sẽ bị thay đổi ngày bắt đầu và kết thúc để khớp với thứ tự tuần!
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Lưu thay đổi</button>
             </form>
         </div>
     </div>
@@ -616,6 +770,31 @@ $pageTitle = 'Quản lý tuần học';
 
         function showAddWeekModal() { document.getElementById('addWeekModal').classList.add('active'); }
         function closeAddWeekModal() { document.getElementById('addWeekModal').classList.remove('active'); }
+
+        function showEditWeekModal() { document.getElementById('editWeekModal').classList.add('active'); }
+        function closeEditWeekModal() { document.getElementById('editWeekModal').classList.remove('active'); }
+
+        function editWeek(data) {
+            document.getElementById('edit_week_id').value = data.id;
+            document.getElementById('edit_so_tuan').value = data.so_tuan;
+            document.getElementById('edit_ten_tuan').value = data.ten_tuan;
+            document.getElementById('edit_ngay_bat_dau').value = data.ngay_bat_dau;
+            document.getElementById('edit_ngay_ket_thuc').value = data.ngay_ket_thuc;
+
+            showEditWeekModal();
+        }
+
+        document.getElementById('edit_auto_follow').addEventListener('change', function () {
+            document.getElementById('auto_follow_notice').style.display = this.checked ? 'block' : 'none';
+        });
+
+        document.getElementById('editWeekForm').addEventListener('submit', function (e) {
+            if (document.getElementById('edit_auto_follow').checked) {
+                if (!confirm('Bạn có chắc chắn muốn TỰ ĐỘNG cập nhật tất cả các tuần phía sau?')) {
+                    e.preventDefault();
+                }
+            }
+        });
 
         function autoGenerateWeeks() {
             if (confirm('Thao tác này sẽ xóa tất cả tuần hiện tại và tạo lại từ đầu. Bạn có chắc chắn?')) {
@@ -682,4 +861,5 @@ $pageTitle = 'Quản lý tuần học';
         updateSemesterDates();
     </script>
 </body>
+
 </html>
