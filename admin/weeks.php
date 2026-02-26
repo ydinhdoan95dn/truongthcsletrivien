@@ -96,7 +96,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             while ($startDate < $endDate) {
                 $weekStart = clone $startDate;
                 $weekEnd = clone $startDate;
-                $weekEnd->modify('+6 days'); // Chủ nhật
+                $weekEnd->modify('+5 days'); // Thứ 7 (từ thứ 2 + 5 ngày = thứ 7)
 
                 if ($weekEnd > $endDate) {
                     $weekEnd = clone $endDate;
@@ -106,7 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt = $conn->prepare("INSERT INTO tuan_hoc (hoc_ky_id, so_tuan, ten_tuan, ngay_bat_dau, ngay_ket_thuc, trang_thai) VALUES (?, ?, ?, ?, ?, 0)");
                 $stmt->execute(array($hocKyId, $weekNum, $tenTuan, $weekStart->format('Y-m-d'), $weekEnd->format('Y-m-d')));
 
-                $startDate->modify('+7 days');
+                $startDate->modify('+7 days'); // Chuyển sang thứ 2 tuần kế tiếp
                 $weekNum++;
             }
 
@@ -173,10 +173,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $currentEndDate = new DateTime($ngayKetThuc);
             foreach ($nextWeeks as $nextWeek) {
                 $nextStart = clone $currentEndDate;
-                $nextStart->modify('+1 day');
+                // Sang thứ 2 tuần tiếp theo
+                $nextStart->modify('next monday');
 
                 $nextEnd = clone $nextStart;
-                $nextEnd->modify('+6 days');
+                $nextEnd->modify('+5 days'); // Kết thúc vào thứ 7
 
                 $stmtUpd = $conn->prepare("UPDATE tuan_hoc SET ngay_bat_dau = ?, ngay_ket_thuc = ? WHERE id = ?");
                 $stmtUpd->execute(array($nextStart->format('Y-m-d'), $nextEnd->format('Y-m-d'), $nextWeek['id']));
@@ -669,11 +670,11 @@ $pageTitle = 'Quản lý tuần học';
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                     <div class="form-group">
                         <label class="form-label">Ngày bắt đầu (Thứ 2)</label>
-                        <input type="date" name="ngay_bat_dau" class="form-input" required>
+                        <input type="date" name="ngay_bat_dau" id="add_ngay_bat_dau" class="form-input" required>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Ngày kết thúc (Chủ nhật)</label>
-                        <input type="date" name="ngay_ket_thuc" class="form-input" required>
+                        <label class="form-label">Ngày kết thúc (Thứ 7)</label>
+                        <input type="date" name="ngay_ket_thuc" id="add_ngay_ket_thuc" class="form-input" required>
                     </div>
                 </div>
                 <button type="submit" class="btn btn-primary" style="width: 100%;">Thêm tuần</button>
@@ -859,6 +860,23 @@ $pageTitle = 'Quản lý tuần học';
 
         // Initial call to set default dates
         updateSemesterDates();
+
+        // Tự động tính ngày kết thúc (Thứ 7) khi chọn ngày bắt đầu (Thứ 2)
+        document.getElementById('add_ngay_bat_dau').addEventListener('change', function () {
+            if (this.value) {
+                let d = new Date(this.value);
+                d.setDate(d.getDate() + 5);
+                document.getElementById('add_ngay_ket_thuc').value = d.toISOString().split('T')[0];
+            }
+        });
+
+        document.getElementById('edit_ngay_bat_dau').addEventListener('change', function () {
+            if (this.value) {
+                let d = new Date(this.value);
+                d.setDate(d.getDate() + 5);
+                document.getElementById('edit_ngay_ket_thuc').value = d.toISOString().split('T')[0];
+            }
+        });
     </script>
 </body>
 
