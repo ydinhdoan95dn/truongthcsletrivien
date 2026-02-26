@@ -1,0 +1,126 @@
+============================================================
+  TẠO VIRTUAL HOST - HƯỚNG DẪN NHANH
+  Domain: truongbuithixuan.local
+============================================================
+
+📌 CHỌN MỘT TRONG HAI CÁCH:
+
+┌─────────────────────────────────────────────────────────┐
+│ ⚡ CÁCH 1: TỰ ĐỘNG (KHUYẾN NGHỊ - 2 PHÚT)              │
+└─────────────────────────────────────────────────────────┘
+
+1. Vào thư mục: config_samples\
+2. Click chuột phải: add-virtualhost.ps1
+3. Chọn "Run with PowerShell"
+4. Chọn "Yes" khi hỏi quyền Admin
+5. Mở XAMPP → Stop và Start Apache
+6. Truy cập: http://truongbuithixuan.local
+
+✅ XONG!
+
+┌─────────────────────────────────────────────────────────┐
+│ 🔧 CÁCH 2: THỦ CÔNG (10 PHÚT)                          │
+└─────────────────────────────────────────────────────────┘
+
+Xem hướng dẫn chi tiết: HUONG_DAN_TAO_VIRTUAL_HOST.md
+
+BƯỚC 1: Chỉnh httpd-vhosts.conf
+  • Mở: C:\xampp\apache\conf\extra\httpd-vhosts.conf
+  • Copy từ: config_samples\httpd-vhosts-sample.conf
+  • Paste vào CUỐI file httpd-vhosts.conf
+
+BƯỚC 2: Chỉnh hosts file
+  • Mở với Admin: C:\Windows\System32\drivers\etc\hosts
+  • Copy từ: config_samples\hosts-sample.txt
+  • Paste vào CUỐI file hosts
+
+BƯỚC 3: Bật Virtual Hosts
+  • Mở: C:\xampp\apache\conf\httpd.conf
+  • Tìm dòng: Include conf/extra/httpd-vhosts.conf
+  • Xóa dấu # ở đầu (nếu có)
+
+BƯỚC 4: Restart Apache
+  • XAMPP Control Panel
+  • Stop → Start Apache
+
+============================================================
+  KIỂM TRA SAU KHI HOÀN THÀNH
+============================================================
+
+✓ Test 1: Ping domain
+  Mở CMD:
+  > ping truongbuithixuan.local
+
+  Kết quả đúng: Reply from 127.0.0.1
+
+✓ Test 2: Truy cập website
+  Mở trình duyệt:
+  ☑ http://truongbuithixuan.local
+  ☑ http://www.truongbuithixuan.local
+  ☑ http://localhost (vẫn hoạt động)
+
+✓ Test 3: Apache status
+  XAMPP Control Panel → Apache phải màu XANH
+
+============================================================
+  LỢI ÍCH KHI DÙNG VIRTUAL HOST
+============================================================
+
+TRƯỚC: http://localhost/truongbuithixuan/
+BÂY GIỜ: http://truongbuithixuan.local/
+
+✅ URL ngắn gọn, dễ nhớ
+✅ Giống domain thật khi deploy
+✅ Dễ test session/cookies
+✅ Chuyên nghiệp hơn khi demo
+
+============================================================
+  XỬ LÝ LỖI NHANH
+============================================================
+
+❌ Apache không start?
+  → Xem log: XAMPP → Logs → Apache (error.log)
+  → Kiểm tra cú pháp trong httpd-vhosts.conf
+
+❌ Domain không hoạt động?
+  → Flush DNS: ipconfig /flushdns
+  → Ping test: ping truongbuithixuan.local
+  → Kiểm tra file hosts đã thêm domain chưa
+
+❌ Lỗi 403 Forbidden?
+  → Kiểm tra trong httpd-vhosts.conf:
+    <Directory>
+      Require all granted  ← Phải có dòng này
+    </Directory>
+
+❌ Không sửa được hosts file?
+  → Phải mở Notepad với quyền Administrator
+
+============================================================
+  HỖ TRỢ
+============================================================
+
+📖 Hướng dẫn đầy đủ:
+   HUONG_DAN_TAO_VIRTUAL_HOST.md
+
+📁 Config samples:
+   config_samples\
+
+📜 Script tự động:
+   config_samples\add-virtualhost.ps1
+
+============================================================
+  ĐÃ TỰ ĐỘNG CẬP NHẬT
+============================================================
+
+✅ File includes/config.php đã được cập nhật
+   → Tự động detect domain truongbuithixuan.local
+   → Vẫn hoạt động với localhost/truongbuithixuan
+
+============================================================
+
+🎉 CHÚC BẠN THÀNH CÔNG!
+
+Nếu cần hỗ trợ, xem file:
+  HUONG_DAN_TAO_VIRTUAL_HOST.md (hướng dẫn chi tiết)
+  config_samples\README.md (thông tin files config)

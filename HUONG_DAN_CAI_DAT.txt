@@ -1,0 +1,181 @@
+=====================================================
+HƯỚNG DẪN CÀI ĐẶT
+WEB APP HỌC TẬP & THI TRỰC TUYẾN TIỂU HỌC
+TRƯỜNG BÙI THỊ XUÂN
+=====================================================
+
+I. YÊU CẦU HỆ THỐNG
+-----------------------------------------------------
+- XAMPP (PHP 5.6 trở lên, MySQL 5.x)
+- Trình duyệt web hiện đại (Chrome, Firefox, Edge)
+
+II. CÀI ĐẶT
+-----------------------------------------------------
+
+BƯỚC 1: Cài đặt XAMPP
+- Tải XAMPP từ: https://www.apachefriends.org/
+- Cài đặt và khởi động Apache + MySQL
+
+BƯỚC 2: Tạo Database
+- Mở phpMyAdmin: http://localhost/phpmyadmin
+- Tạo database mới với tên: hoctaptructuyen
+- Chọn Collation: utf8mb4_unicode_ci
+- Import file database.sql từ thư mục project
+
+BƯỚC 3: Cấu hình kết nối
+- Mở file: includes/config.php
+- Kiểm tra thông tin kết nối database:
+  + DB_HOST: localhost
+  + DB_NAME: hoctaptructuyen
+  + DB_USER: root (hoặc user của bạn)
+  + DB_PASS: (để trống hoặc nhập password)
+
+BƯỚC 4: Truy cập website
+- Trang chủ: http://localhost/truongbuithixuan
+- Admin: http://localhost/truongbuithixuan/admin
+
+III. TÀI KHOẢN MẪU
+-----------------------------------------------------
+
+ADMIN (Giáo viên):
+- Username: admin
+- Password: admin123
+
+HỌC SINH (Lớp 3):
+- Mã HS: HS3001, HS3002, HS3003, HS3004, HS3005
+- Password: 123456
+
+HỌC SINH (Lớp 4):
+- Mã HS: HS4001, HS4002, HS4003, HS4004, HS4005
+- Password: 123456
+
+IV. CẤU TRÚC THƯ MỤC
+-----------------------------------------------------
+truongbuithixuan/
+├── admin/                  # Trang quản trị
+│   ├── dashboard.php       # Dashboard admin
+│   ├── students.php        # Quản lý học sinh
+│   ├── exams.php           # Quản lý đề thi
+│   ├── questions.php       # Ngân hàng câu hỏi
+│   ├── documents.php       # Quản lý tài liệu
+│   ├── results.php         # Kết quả thi
+│   └── login.php           # Đăng nhập admin
+│
+├── student/                # Trang học sinh
+│   ├── dashboard.php       # Dashboard học sinh
+│   ├── exam.php            # Làm bài thi
+│   ├── result.php          # Kết quả bài thi
+│   └── ranking.php         # Bảng xếp hạng
+│
+├── api/                    # API endpoints
+│   ├── submit_answer.php   # Gửi đáp án
+│   ├── finish_exam.php     # Kết thúc bài thi
+│   └── leaderboard.php     # Lấy bảng xếp hạng
+│
+├── includes/               # Các file PHP dùng chung
+│   ├── config.php          # Cấu hình hệ thống
+│   ├── header.php          # Header chung
+│   └── footer.php          # Footer chung
+│
+├── assets/                 # Tài nguyên tĩnh
+│   ├── css/style.css       # Stylesheet
+│   ├── js/app.js           # JavaScript
+│   └── images/             # Hình ảnh
+│
+├── uploads/                # Thư mục upload
+│   └── documents/          # Tài liệu upload
+│
+├── index.php               # Trang chủ
+├── login.php               # Đăng nhập học sinh
+├── logout.php              # Đăng xuất
+└── database.sql            # File database
+
+V. TÍNH NĂNG CHÍNH
+-----------------------------------------------------
+
+1. TRANG CHỦ (Chưa đăng nhập)
+   - Xem danh sách lớp (Lớp 3, 4 hoạt động)
+   - Xem kho tài liệu học tập chung
+   - Xem bảng xếp hạng top 10 học sinh
+   - Đăng nhập để làm bài thi
+
+2. DASHBOARD HỌC SINH
+   - Thông tin cá nhân + huy hiệu
+   - Chuỗi ngày học liên tục
+   - Thống kê: Điểm TB, Số bài, Điểm xếp hạng
+   - Kho tài liệu theo lớp
+   - Danh sách đề thi có thể làm
+   - Lịch sử làm bài gần đây
+
+3. THI ONLINE
+   - Mỗi câu có giới hạn thời gian (15 giây)
+   - Đồng hồ đếm ngược
+   - Tự động chuyển câu khi hết giờ
+   - Không thể quay lại câu trước
+   - Chống refresh/thoát trang
+
+4. KẾT QUẢ
+   - Hiển thị điểm ngay sau khi thi
+   - Đánh giá: Xuất sắc/Tốt/Khá/Cần cố gắng
+   - Xem lại chi tiết từng câu
+   - Hiệu ứng confetti nếu điểm cao
+
+5. BẢNG XẾP HẠNG
+   - Top 3 nổi bật với podium
+   - Lọc theo lớp
+   - Công thức tính điểm thông minh
+   - Hệ thống huy hiệu
+
+6. ADMIN PANEL
+   - Quản lý học sinh (CRUD)
+   - Quản lý đề thi
+   - Ngân hàng câu hỏi
+   - Quản lý tài liệu (Google Drive Embed)
+   - Xem kết quả thi
+   - Thống kê
+
+VI. CÔNG THỨC XẾP HẠNG
+-----------------------------------------------------
+Điểm XH = (ĐTB × 60%) + (Số lần thi × 20%)
+        + (Tốc độ × 10%) + (Chuỗi ngày × 10%)
+
+Ưu điểm:
+- Học sinh trung bình nhưng chăm học vẫn lên top
+- Khuyến khích học đều đặn mỗi ngày
+- Không chỉ dựa vào điểm cao
+
+VII. QUẢN LÝ TÀI LIỆU
+-----------------------------------------------------
+Hệ thống hỗ trợ 2 cách upload tài liệu:
+
+1. UPLOAD TRỰC TIẾP (Khuyên dùng)
+   - Hỗ trợ: PDF, Word, PowerPoint, Video, Hình ảnh
+   - Giới hạn: 50MB / file
+   - File lưu tại: uploads/documents/
+   - PDF/Video/Hình xem được trực tiếp trong trình duyệt
+
+2. GOOGLE DRIVE
+   - Upload file lên Google Drive
+   - Chia sẻ "Mọi người có link"
+   - Dán link vào form, hệ thống tự lấy ID
+   - Hoặc copy Google Drive ID trực tiếp
+
+VIII. LƯU Ý QUAN TRỌNG
+-----------------------------------------------------
+1. Password mặc định đã được hash bằng bcrypt
+2. Đảm bảo thư mục uploads có quyền ghi (chmod 755)
+3. Tài liệu upload trực tiếp xem nhanh hơn Google Drive
+4. Chỉ lớp 3 và lớp 4 được kích hoạt trong dữ liệu mẫu
+5. Nếu đã có database cũ, chạy file update_database.sql
+
+IX. HỖ TRỢ
+-----------------------------------------------------
+Nếu gặp lỗi, vui lòng kiểm tra:
+1. XAMPP Apache và MySQL đã chạy chưa
+2. Database đã import đúng chưa
+3. Thông tin kết nối trong config.php
+4. Encoding UTF-8 cho file PHP
+
+=====================================================
+CHÚC BẠN TRIỂN KHAI THÀNH CÔNG!
+=====================================================

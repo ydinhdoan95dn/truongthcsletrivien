@@ -1,0 +1,27 @@
+# Database Configuration
+config.php
+
+# Directory Uploads
+uploads/*
+!uploads/.gitkeep
+
+# Backups & SQL dumps
+*.sql
+*.zip
+*.rar
+*.7z
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+error_log
+
+# Dev folders
+.idea/
+.vscode/
+.git/
+node_modules/
