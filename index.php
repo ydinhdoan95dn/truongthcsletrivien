@@ -1902,7 +1902,7 @@ $tieuChiList = $stmtTC->fetchAll();
         }
 
         // ========== FILE ICONS ==========
-        var FILE_ICONS = { pdf: '\uD83D\uDCC4', word: '\uD83D\uDCDD', ppt: '\uD83D\uDCCA', video: '\uD83C\uDFAC', image: '\uD83D\uDDBC\uFE0F' };
+        var FILE_ICONS = { pdf: '\uD83D\uDCC4', word: '\uD83D\uDCDD', excel: '\uD83D\uDCCA', ppt: '\uD83D\uDCCA', video: '\uD83C\uDFAC', image: '\uD83D\uDDBC\uFE0F' };
         var BASE_URL = '<?php echo BASE_URL; ?>';
 
         // ========== DOCUMENT VIEWER ==========
@@ -1920,10 +1920,17 @@ $tieuChiList = $stmtTC->fetchAll();
 
             CURRENT_DOC = doc;
             var gdriveId = doc.google_drive_id || '';
-            var localFile = doc.local_file || '';
+            var filePath = doc.file_path || '';
+            var youtubeId = doc.youtube_id || '';
             var fileType = doc.loai_file || '';
 
-            if (!localFile && !gdriveId) {
+            // Editor: mở trang xem riêng
+            if (fileType === 'editor') {
+                window.open(BASE_URL + '/student/mobile/document-view.php?id=' + docId, '_blank');
+                return;
+            }
+
+            if (!filePath && !gdriveId && !youtubeId) {
                 alert('Tài liệu chưa có file đính kèm');
                 return;
             }
@@ -1941,11 +1948,11 @@ $tieuChiList = $stmtTC->fetchAll();
             document.getElementById('docViewerTitle').textContent = doc.tieu_de;
 
             var viewUrl = '';
-            if (localFile) {
-                var fileUrl = BASE_URL + '/uploads/documents/' + localFile;
+            if (filePath) {
+                var fileUrl = BASE_URL + '/' + filePath;
                 if (fileType === 'pdf') {
                     viewUrl = fileUrl;
-                } else if (fileType === 'word' || fileType === 'ppt') {
+                } else if (fileType === 'word' || fileType === 'ppt' || fileType === 'excel') {
                     viewUrl = 'https://docs.google.com/gview?url=' + encodeURIComponent(fileUrl) + '&embedded=true';
                 } else if (fileType === 'image') {
                     showImageViewer(fileUrl);
@@ -1956,6 +1963,8 @@ $tieuChiList = $stmtTC->fetchAll();
                 } else {
                     viewUrl = fileUrl;
                 }
+            } else if (youtubeId) {
+                viewUrl = 'https://www.youtube.com/embed/' + youtubeId + '?rel=0';
             } else if (gdriveId) {
                 if (fileType === 'image') {
                     var imgUrl = 'https://drive.google.com/uc?export=view&id=' + gdriveId;
