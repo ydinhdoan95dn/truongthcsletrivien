@@ -207,7 +207,7 @@ foreach ($taiLieuList as $tl) {
     <script src="https://unpkg.com/feather-icons"></script>
     <link rel="stylesheet" href="<?php echo BASE_URL; ?>/assets/css/style.css">
     <!-- TinyMCE Editor -->
-    <script src="https://cdn.tiny.cloud/1/0mynsf76992hnllxsipvvkuoe4qcfdesqs0gpza59jmvi223/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tinymce/6.8.3/tinymce.min.js" referrerpolicy="origin"></script>
     <style>
         .upload-tabs {
             display: flex;

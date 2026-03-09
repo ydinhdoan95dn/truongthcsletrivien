@@ -233,11 +233,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 }
 
 // Pre-calculate locked state
+// Cho phép chấm lại nếu bị từ chối (tu_choi)
 $hasChoduyet = false;
+$hasTuChoi = false;
 foreach ($diemDaCham as $d) {
     if ($d['trang_thai'] === 'cho_duyet' || $d['trang_thai'] === 'da_duyet') {
         $hasChoduyet = true;
         break;
+    }
+    if ($d['trang_thai'] === 'tu_choi') {
+        $hasTuChoi = true;
     }
 }
 
@@ -624,6 +629,8 @@ $criteriaColors = array(
                                 $ghiChuHienTai = isset($diemDaCham[$tcId]) ? $diemDaCham[$tcId]['ghi_chu'] : '';
                                 $trangThai = isset($diemDaCham[$tcId]) ? $diemDaCham[$tcId]['trang_thai'] : '';
                                 $isLocked = ($trangThai === 'cho_duyet' || $trangThai === 'da_duyet');
+                                // Unlock nếu bị từ chối để cho chấm lại
+                                if ($trangThai === 'tu_choi') $isLocked = false;
                                 $diemMax = floatval($tc['diem_toi_da']);
                                 $trongSo = floatval($tc['trong_so']);
                                 $weightedVal = ($diemMax > 0) ? round(($diemHienTai / $diemMax) * $trongSo, 1) : 0;
@@ -644,7 +651,9 @@ $criteriaColors = array(
                                             <?php endif; ?>
                                         </div>
                                     </div>
-                                    <?php if ($trangThai === 'cho_duyet'): ?>
+                                    <?php if ($trangThai === 'tu_choi'): ?>
+                                        <span class="status-badge" style="background:#FEE2E2;color:#DC2626;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;"><i class="fas fa-times"></i> T&#7915; ch&#7889;i - Ch&#7845;m l&#7841;i</span>
+                                    <?php elseif ($trangThai === 'cho_duyet'): ?>
                                         <span class="status-badge status-cho-duyet"><i class="fas fa-clock"></i> Ch&#7901; duy&#7879;t</span>
                                     <?php elseif ($trangThai === 'da_duyet'): ?>
                                         <span class="status-badge status-da-duyet"><i class="fas fa-check"></i> &#272;&atilde; duy&#7879;t</span>
@@ -706,7 +715,10 @@ $criteriaColors = array(
                                 <div class="classification-badge badge-none" id="classificationBadge">--</div>
                             </div>
                             <div class="action-buttons">
-                                <?php if (!$hasChoduyet): ?>
+                                <?php if (!$hasChoduyet || $hasTuChoi): ?>
+                                    <?php if ($hasTuChoi): ?>
+                                        <span style="color:#DC2626;font-size:13px;font-weight:600;"><i class="fas fa-exclamation-triangle"></i> &#272;i&#7875;m b&#7883; t&#7915; ch&#7889;i, vui l&ograve;ng ch&#7845;m l&#7841;i!</span>
+                                    <?php endif; ?>
                                     <button type="submit" name="action" value="luu_tam" class="btn-save">
                                         <i class="fas fa-save"></i> L&#432;u t&#7841;m
                                     </button>

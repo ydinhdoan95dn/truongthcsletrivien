@@ -429,9 +429,14 @@ while ($row = $stmtCfg->fetch()) {
                                         - Khối <?php echo $khoi_filter; ?>
                                     <?php endif; ?>
                                 </h5>
-                                <button class="btn btn-sm btn-success" onclick="exportExcel()">
-                                    <i class="fas fa-file-excel"></i> Xuất Excel
+                                <?php if ($tuan_filter > 0): ?>
+                                <button class="btn btn-sm btn-primary" onclick="tinhLaiXepHang(<?php echo $tuan_filter; ?>)">
+                                    <i class="fas fa-sync-alt"></i> Tính lại xếp hạng
                                 </button>
+                                <?php endif; ?>
+                                <!-- <button class="btn btn-sm btn-success" onclick="exportExcel()">
+                                    <i class="fas fa-file-excel"></i> Xuất Excel
+                                </button> -->
                             </div>
                         </div>
                         <div class="card-body p-0">
@@ -627,9 +632,29 @@ while ($row = $stmtCfg->fetch()) {
             });
         });
 
-        function exportExcel() {
-            // TODO: Implement Excel export
-            alert('Chức năng xuất Excel sẽ được triển khai sau');
+        function tinhLaiXepHang(tuanId) {
+            if (!confirm('Bạn có chắc muốn tính lại xếp hạng cho tuần này?')) return;
+
+            var formData = new FormData();
+            formData.append('tuan_id', tuanId);
+            formData.append('type', 'tuan');
+
+            fetch('<?php echo BASE_URL; ?>/admin/thidua/tinh_toan_xep_hang.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    alert(data.message);
+                    location.reload();
+                } else {
+                    alert('Lỗi: ' + data.message);
+                }
+            })
+            .catch(function(err) {
+                alert('Lỗi kết nối: ' + err.message);
+            });
         }
     </script>
 </body>

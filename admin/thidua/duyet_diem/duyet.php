@@ -73,12 +73,12 @@ try {
         ['lop_id' => $lop_id, 'tuan_id' => $tuan_id, 'so_tieu_chi' => count($danhSachDiem)]
     );
 
-    // TODO: Tính tổng điểm và cập nhật bảng xếp hạng tuần
-    // Sẽ implement trong Module 4
-
     $conn->commit();
 
-    $_SESSION['success'] = "Đã duyệt thành công {$lopInfo['ten_lop']} - " . count($danhSachDiem) . " tiêu chí!";
+    // Tính xếp hạng sau khi duyệt
+    $rankResult = tinhToanXepHangTuan($tuan_id);
+
+    $_SESSION['success'] = "Đã duyệt thành công {$lopInfo['ten_lop']} - " . count($danhSachDiem) . " tiêu chí! Xếp hạng đã cập nhật.";
     header("Location: index.php?tuan={$tuan_id}");
     exit;
 

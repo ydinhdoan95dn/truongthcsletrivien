@@ -21,9 +21,9 @@ $currentPage = basename($_SERVER['PHP_SELF']);
 $activeGroup = '';
 $examPages = array('exams.php', 'questions.php', 'generate-variants.php', 'import-word.php');
 $schedulePages = array('exam-schedule.php', 'weeks.php', 'results.php', 'ranking.php');
-$systemPages = array('teachers.php', 'classes.php', 'students.php', 'import-students.php', 'settings.php');
+$systemPages = array('teachers.php', 'classes.php', 'subjects.php', 'students.php', 'import-students.php', 'settings.php');
 $documentPages = array('documents.php');
-$thiduaPages = array('index.php', 'tuan.php', 'chi_tiet.php', 'create.php', 'edit.php', 'duyet.php', 'lich_su.php', 'history.php', 'toggle_co_do.php', 'duyet_tat_ca.php', 'tu_choi.php', 'tinh_toan_xep_hang.php');
+$thiduaPages = array('index.php', 'tuan.php', 'chi_tiet.php', 'create.php', 'edit.php', 'duyet.php', 'lich_su.php', 'history.php', 'toggle_co_do.php', 'duyet_tat_ca.php', 'tu_choi.php', 'tinh_toan_xep_hang.php', 'cham_diem.php', 'tieu_chi.php');
 
 if (in_array($currentPage, $examPages))
     $activeGroup = 'exam';
@@ -507,11 +507,16 @@ if (strpos($requestUri, '/thidua/') !== false)
                     <i data-feather="flag"></i>
                 </div>
                 <span class="group-title">Thi đua lớp học</span>
-                <span class="group-count"><?php echo isAdmin() ? '4' : '3'; ?></span>
+                <span class="group-count"><?php echo isAdmin() ? '7' : '4'; ?></span>
                 <i data-feather="chevron-down" class="group-arrow"></i>
             </div>
             <div class="menu-submenu">
                 <?php if (isAdmin()): ?>
+                    <a href="<?php echo BASE_URL; ?>/admin/thidua/tieu_chi.php"
+                        class="<?php echo $activeGroup === 'thidua' && strpos($requestUri, 'tieu_chi') !== false ? 'active' : ''; ?>">
+                        <i data-feather="list"></i>
+                        Tiêu chí thi đua
+                    </a>
                     <a href="<?php echo BASE_URL; ?>/admin/thidua/hoc_sinh_co_do/"
                         class="<?php echo $activeGroup === 'thidua' && strpos($requestUri, 'hoc_sinh_co_do') !== false ? 'active' : ''; ?>">
                         <i data-feather="user-check"></i>
@@ -522,6 +527,11 @@ if (strpos($requestUri, '/thidua/') !== false)
                     class="<?php echo $activeGroup === 'thidua' && strpos($requestUri, 'phan_cong') !== false ? 'active' : ''; ?>">
                     <i data-feather="git-branch"></i>
                     Phân công chấm chéo
+                </a>
+                <a href="<?php echo BASE_URL; ?>/admin/thidua/cham_diem.php"
+                    class="<?php echo $activeGroup === 'thidua' && $currentPage === 'cham_diem.php' && strpos($requestUri, 'admin/thidua') !== false ? 'active' : ''; ?>">
+                    <i data-feather="edit-3"></i>
+                    Chấm / Sửa điểm
                 </a>
                 <a href="<?php echo BASE_URL; ?>/admin/thidua/duyet_diem/"
                     class="<?php echo $activeGroup === 'thidua' && strpos($requestUri, 'duyet_diem') !== false ? 'active' : ''; ?>">
@@ -544,7 +554,7 @@ if (strpos($requestUri, '/thidua/') !== false)
                         <i data-feather="settings"></i>
                     </div>
                     <span class="group-title">Hệ thống</span>
-                    <span class="group-count"><?php echo isAdmin() ? '5' : '3'; ?></span>
+                    <span class="group-count"><?php echo isAdmin() ? '6' : '3'; ?></span>
                     <i data-feather="chevron-down" class="group-arrow"></i>
                 </div>
                 <div class="menu-submenu">
@@ -558,6 +568,11 @@ if (strpos($requestUri, '/thidua/') !== false)
                             class="<?php echo $currentPage === 'classes.php' ? 'active' : ''; ?>">
                             <i data-feather="book"></i>
                             Quản lý lớp học
+                        </a>
+                        <a href="<?php echo BASE_URL; ?>/admin/subjects.php"
+                            class="<?php echo $currentPage === 'subjects.php' ? 'active' : ''; ?>">
+                            <i data-feather="bookmark"></i>
+                            Quản lý môn học
                         </a>
                     <?php endif; ?>
                     <a href="<?php echo BASE_URL; ?>/admin/students.php"

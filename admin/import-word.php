@@ -157,7 +157,7 @@ $pageTitle = 'Smart Editor - Import Đề Thi';
     <script src="https://unpkg.com/feather-icons"></script>
     <link rel="stylesheet" href="<?php echo BASE_URL; ?>/assets/css/style.css">
     <!-- TinyMCE -->
-    <script src="https://cdn.tiny.cloud/1/0mynsf76992hnllxsipvvkuoe4qcfdesqs0gpza59jmvi223/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tinymce/6.8.3/tinymce.min.js" referrerpolicy="origin"></script>
     <!-- MathJax for rendering math formulas -->
     <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
