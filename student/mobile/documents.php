@@ -48,6 +48,7 @@ $taiLieuList = $stmt->fetchAll();
 $fileIcons = array(
     'pdf' => '📄',
     'word' => '📝',
+    'excel' => '📊',
     'ppt' => '📊',
     'video' => '🎬',
     'image' => '🖼️',
@@ -92,7 +93,10 @@ include 'header.php';
         // Xác định icon và loại nguồn
         $icon = '📁';
         $sourceType = '';
-        if (!empty($tl['youtube_id'])) {
+        if (!empty($tl['file_path'])) {
+            $icon = isset($fileIcons[$tl['loai_file']]) ? $fileIcons[$tl['loai_file']] : '📄';
+            $sourceType = strtoupper(pathinfo($tl['file_path'], PATHINFO_EXTENSION));
+        } elseif (!empty($tl['youtube_id'])) {
             $icon = '🎬';
             $sourceType = 'YouTube';
         } elseif (!empty($tl['google_drive_id'])) {

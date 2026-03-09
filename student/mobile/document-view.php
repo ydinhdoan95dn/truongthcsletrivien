@@ -135,7 +135,36 @@ $pageTitle = $taiLieu['tieu_de'];
             <div class="viewer-title"><?php echo getSubjectIcon($taiLieu['icon']); ?> <?php echo htmlspecialchars($taiLieu['tieu_de']); ?></div>
         </div>
 
-        <?php if (!empty($taiLieu['youtube_id'])): ?>
+        <?php if (!empty($taiLieu['file_path'])): ?>
+            <!-- File Upload - Xem trước -->
+            <?php
+            $ext = strtolower(pathinfo($taiLieu['file_path'], PATHINFO_EXTENSION));
+            $fileUrl = BASE_URL . '/' . $taiLieu['file_path'];
+            ?>
+            <?php if ($ext === 'pdf'): ?>
+            <iframe
+                class="viewer-frame"
+                src="<?php echo htmlspecialchars($fileUrl); ?>"
+                allowfullscreen>
+            </iframe>
+            <?php elseif (in_array($ext, array('jpg', 'jpeg', 'png', 'gif', 'webp'))): ?>
+            <div style="flex: 1; overflow-y: auto; padding: 16px; background: white; text-align: center;">
+                <img src="<?php echo htmlspecialchars($fileUrl); ?>" style="max-width: 100%; height: auto; border-radius: 8px;" alt="<?php echo htmlspecialchars($taiLieu['tieu_de']); ?>">
+            </div>
+            <?php else: ?>
+            <div style="flex: 1; display: flex; align-items: center; justify-content: center; text-align: center; padding: 20px;">
+                <div>
+                    <?php
+                    $docIcons = array('doc' => '📝', 'docx' => '📝', 'xls' => '📊', 'xlsx' => '📊', 'ppt' => '📊', 'pptx' => '📊');
+                    $docIcon = isset($docIcons[$ext]) ? $docIcons[$ext] : '📄';
+                    ?>
+                    <div style="font-size: 64px; margin-bottom: 16px;"><?php echo $docIcon; ?></div>
+                    <div style="font-weight: 700; margin-bottom: 8px;"><?php echo htmlspecialchars($taiLieu['file_name'] ? $taiLieu['file_name'] : basename($taiLieu['file_path'])); ?></div>
+                    <div style="color: #6B7280; font-size: 14px; margin-bottom: 16px;">Nhấn nút bên dưới để tải về xem</div>
+                </div>
+            </div>
+            <?php endif; ?>
+        <?php elseif (!empty($taiLieu['youtube_id'])): ?>
             <!-- YouTube Video -->
             <iframe
                 class="viewer-frame"
@@ -170,7 +199,11 @@ $pageTitle = $taiLieu['tieu_de'];
 
         <div class="viewer-footer">
             <a href="documents.php" class="btn btn-outline">← Quay lại</a>
-            <?php if (!empty($taiLieu['youtube_id'])): ?>
+            <?php if (!empty($taiLieu['file_path'])): ?>
+            <a href="<?php echo BASE_URL; ?>/admin/download.php?id=<?php echo $taiLieu['id']; ?>" class="btn btn-primary">
+                ⬇️ Tải xuống
+            </a>
+            <?php elseif (!empty($taiLieu['youtube_id'])): ?>
             <a href="https://www.youtube.com/watch?v=<?php echo htmlspecialchars($taiLieu['youtube_id']); ?>" class="btn btn-primary" target="_blank">
                 🎬 Xem trên YouTube
             </a>

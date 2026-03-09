@@ -1607,6 +1607,7 @@ $jsData = array(
     var FILE_ICONS = {
         'pdf': '📄',
         'word': '📝',
+        'excel': '📊',
         'ppt': '📊',
         'video': '🎬',
         'image': '🖼️'
@@ -1948,10 +1949,10 @@ $jsData = array(
         for (var i = 0; i < items.length; i++) {
             var doc = items[i];
             var icon = FILE_ICONS[doc.loai_file] || '📁';
-            var localFile = doc.local_file || '';
+            var filePath = doc.file_path || '';
             var gdriveId = doc.google_drive_id || '';
 
-            html += '<div class="item-card" onclick="viewDocument(\'' + gdriveId + '\', \'' + doc.loai_file + '\', \'' + escapeHtml(doc.tieu_de).replace(/'/g, "\\'") + '\', \'' + localFile + '\')">' +
+            html += '<div class="item-card" onclick="viewDocument(\'' + gdriveId + '\', \'' + doc.loai_file + '\', \'' + escapeHtml(doc.tieu_de).replace(/'/g, "\\'") + '\', \'' + filePath + '\')">' +
                 '<div class="item-header">' +
                     '<div class="item-icon" style="background: ' + doc.mau_sac + '20;">' + icon + '</div>' +
                     '<div>' +
@@ -1959,7 +1960,7 @@ $jsData = array(
                         '<div class="item-subtitle">' + escapeHtml(doc.ten_mon) + '</div>' +
                     '</div>' +
                 '</div>' +
-                '<button class="item-btn doc-btn" onclick="event.stopPropagation(); viewDocument(\'' + gdriveId + '\', \'' + doc.loai_file + '\', \'' + escapeHtml(doc.tieu_de).replace(/'/g, "\\'") + '\', \'' + localFile + '\')">' +
+                '<button class="item-btn doc-btn" onclick="event.stopPropagation(); viewDocument(\'' + gdriveId + '\', \'' + doc.loai_file + '\', \'' + escapeHtml(doc.tieu_de).replace(/'/g, "\\'") + '\', \'' + filePath + '\')">' +
                     '<span>👁️</span> Xem tài liệu' +
                 '</button>' +
             '</div>';
@@ -2058,8 +2059,8 @@ $jsData = array(
         downloadUrl: ''
     };
 
-    function viewDocument(gdriveId, fileType, title, localFile) {
-        if (!localFile && !gdriveId) {
+    function viewDocument(gdriveId, fileType, title, filePath) {
+        if (!filePath && !gdriveId) {
             alert('Tài liệu chưa có file đính kèm');
             return;
         }
@@ -2069,7 +2070,7 @@ $jsData = array(
             gdriveId: gdriveId,
             fileType: fileType,
             title: title,
-            localFile: localFile,
+            filePath: filePath,
             downloadUrl: ''
         };
 
@@ -2091,9 +2092,9 @@ $jsData = array(
         var viewUrl = '';
         var downloadUrl = '';
 
-        if (localFile) {
+        if (filePath) {
             // File local
-            var fileUrl = APP.baseUrl + '/uploads/documents/' + localFile;
+            var fileUrl = APP.baseUrl + '/' + filePath;
             downloadUrl = fileUrl;
 
             if (fileType === 'pdf') {

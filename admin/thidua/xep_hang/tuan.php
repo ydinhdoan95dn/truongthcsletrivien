@@ -429,8 +429,8 @@ while ($row = $stmtCfg->fetch()) {
                                         - Khối <?php echo $khoi_filter; ?>
                                     <?php endif; ?>
                                 </h5>
-                                <?php if ($tuan_filter > 0): ?>
-                                <button class="btn btn-sm btn-primary" onclick="tinhLaiXepHang(<?php echo $tuan_filter; ?>)">
+                                <?php if ($tuan_id > 0): ?>
+                                <button class="btn btn-sm btn-primary" onclick="tinhLaiXepHang(<?php echo $tuan_id; ?>)">
                                     <i class="fas fa-sync-alt"></i> Tính lại xếp hạng
                                 </button>
                                 <?php endif; ?>

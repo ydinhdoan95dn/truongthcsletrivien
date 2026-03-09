@@ -25,6 +25,34 @@ if (!file_exists($editorUploadDir)) {
     mkdir($editorUploadDir, 0777, true);
 }
 
+// Thư mục upload cho tài liệu (word, excel, pdf,...)
+$docUploadDir = '../uploads/documents/';
+if (!file_exists($docUploadDir)) {
+    mkdir($docUploadDir, 0777, true);
+}
+
+// Allowed file types cho upload trực tiếp
+$allowedDocTypes = array(
+    // PDF
+    'application/pdf' => 'pdf',
+    // Word
+    'application/msword' => 'word',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'word',
+    // Excel
+    'application/vnd.ms-excel' => 'excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' => 'excel',
+    // PowerPoint
+    'application/vnd.ms-powerpoint' => 'ppt',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation' => 'ppt',
+    // Images
+    'image/jpeg' => 'image',
+    'image/png' => 'image',
+    'image/gif' => 'image',
+    'image/webp' => 'image'
+);
+$allowedDocExtensions = array('pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'jpg', 'jpeg', 'png', 'gif', 'webp');
+$maxDocSize = 20 * 1024 * 1024; // 20MB
+
 // Xử lý form
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = isset($_POST['action']) ? $_POST['action'] : '';
@@ -41,8 +69,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $googleDriveId = '';
         $youtubeId = '';
         $noiDung = '';
+        $filePath = '';
+        $fileName = '';
 
-        if ($uploadType === 'google_drive') {
+        if ($uploadType === 'file_upload') {
+            // Upload file trực tiếp
+            if (isset($_FILES['doc_file']) && $_FILES['doc_file']['error'] === UPLOAD_ERR_OK) {
+                $file = $_FILES['doc_file'];
+                $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+
+                if (!in_array($ext, $allowedDocExtensions)) {
+                    $message = 'Loại file không được hỗ trợ! Chỉ chấp nhận: ' . implode(', ', $allowedDocExtensions);
+                    $messageType = 'error';
+                } elseif ($file['size'] > $maxDocSize) {
+                    $message = 'File quá lớn! Tối đa 20MB.';
+                    $messageType = 'error';
+                } else {
+                    $newFileName = date('Ymd_His') . '_' . uniqid() . '.' . $ext;
+                    $targetPath = $docUploadDir . $newFileName;
+
+                    if (move_uploaded_file($file['tmp_name'], $targetPath)) {
+                        $filePath = 'uploads/documents/' . $newFileName;
+                        $fileName = $file['name'];
+                        // Detect loai_file từ extension
+                        $extToType = array(
+                            'pdf' => 'pdf', 'doc' => 'word', 'docx' => 'word',
+                            'xls' => 'excel', 'xlsx' => 'excel',
+                            'ppt' => 'ppt', 'pptx' => 'ppt',
+                            'jpg' => 'image', 'jpeg' => 'image', 'png' => 'image', 'gif' => 'image', 'webp' => 'image'
+                        );
+                        $loaiFile = isset($extToType[$ext]) ? $extToType[$ext] : 'pdf';
+                    } else {
+                        $message = 'Không thể upload file! Vui lòng thử lại.';
+                        $messageType = 'error';
+                    }
+                }
+            } else {
+                $message = 'Vui lòng chọn file để upload!';
+                $messageType = 'error';
+            }
+        } elseif ($uploadType === 'google_drive') {
             $loaiFile = sanitize($_POST['loai_file']);
             $googleDriveId = sanitize($_POST['google_drive_id']);
             $duongDan = sanitize($_POST['duong_dan']);
@@ -83,10 +149,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Lưu vào database
         if (empty($message)) {
             $stmt = $conn->prepare("
-                INSERT INTO tai_lieu (tieu_de, mo_ta, mon_hoc_id, lop_id, loai_file, google_drive_id, youtube_id, noi_dung, is_public, admin_id)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO tai_lieu (tieu_de, mo_ta, mon_hoc_id, lop_id, loai_file, google_drive_id, youtube_id, noi_dung, file_path, file_name, is_public, admin_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
-            $stmt->execute(array($tieuDe, $moTa, $monHocId, $lopId, $loaiFile, $googleDriveId, $youtubeId, $noiDung, $isPublic, $admin['id']));
+            $stmt->execute(array($tieuDe, $moTa, $monHocId, $lopId, $loaiFile, $googleDriveId, $youtubeId, $noiDung, $filePath, $fileName, $isPublic, $admin['id']));
 
             $message = 'Thêm tài liệu thành công!';
             $messageType = 'success';
@@ -104,8 +170,65 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $googleDriveId = '';
         $youtubeId = '';
         $noiDung = '';
+        $filePath = '';
+        $fileName = '';
 
-        if ($uploadType === 'google_drive') {
+        if ($uploadType === 'file_upload') {
+            // Lấy file cũ để giữ lại nếu không upload file mới
+            $stmtOld = $conn->prepare("SELECT file_path, file_name FROM tai_lieu WHERE id = ?");
+            $stmtOld->execute(array($id));
+            $oldDoc = $stmtOld->fetch();
+
+            if (isset($_FILES['doc_file']) && $_FILES['doc_file']['error'] === UPLOAD_ERR_OK) {
+                $file = $_FILES['doc_file'];
+                $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+
+                if (!in_array($ext, $allowedDocExtensions)) {
+                    $message = 'Loại file không được hỗ trợ!';
+                    $messageType = 'error';
+                } elseif ($file['size'] > $maxDocSize) {
+                    $message = 'File quá lớn! Tối đa 20MB.';
+                    $messageType = 'error';
+                } else {
+                    $newFileName = date('Ymd_His') . '_' . uniqid() . '.' . $ext;
+                    $targetPath = $docUploadDir . $newFileName;
+
+                    if (move_uploaded_file($file['tmp_name'], $targetPath)) {
+                        // Xóa file cũ nếu có
+                        if (!empty($oldDoc['file_path']) && file_exists('../' . $oldDoc['file_path'])) {
+                            unlink('../' . $oldDoc['file_path']);
+                        }
+                        $filePath = 'uploads/documents/' . $newFileName;
+                        $fileName = $file['name'];
+                        $extToType = array(
+                            'pdf' => 'pdf', 'doc' => 'word', 'docx' => 'word',
+                            'xls' => 'excel', 'xlsx' => 'excel',
+                            'ppt' => 'ppt', 'pptx' => 'ppt',
+                            'jpg' => 'image', 'jpeg' => 'image', 'png' => 'image', 'gif' => 'image', 'webp' => 'image'
+                        );
+                        $loaiFile = isset($extToType[$ext]) ? $extToType[$ext] : 'pdf';
+                    } else {
+                        $message = 'Không thể upload file!';
+                        $messageType = 'error';
+                    }
+                }
+            } else {
+                // Giữ file cũ
+                $filePath = $oldDoc ? $oldDoc['file_path'] : '';
+                $fileName = $oldDoc ? $oldDoc['file_name'] : '';
+                // Detect loại file từ extension cũ
+                if (!empty($filePath)) {
+                    $ext = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+                    $extToType = array(
+                        'pdf' => 'pdf', 'doc' => 'word', 'docx' => 'word',
+                        'xls' => 'excel', 'xlsx' => 'excel',
+                        'ppt' => 'ppt', 'pptx' => 'ppt',
+                        'jpg' => 'image', 'jpeg' => 'image', 'png' => 'image', 'gif' => 'image', 'webp' => 'image'
+                    );
+                    $loaiFile = isset($extToType[$ext]) ? $extToType[$ext] : 'pdf';
+                }
+            }
+        } elseif ($uploadType === 'google_drive') {
             $loaiFile = sanitize($_POST['loai_file']);
             $googleDriveId = sanitize($_POST['google_drive_id']);
             $duongDan = isset($_POST['duong_dan']) ? sanitize($_POST['duong_dan']) : '';
@@ -145,16 +268,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt = $conn->prepare("
                 UPDATE tai_lieu
                 SET tieu_de = ?, mo_ta = ?, mon_hoc_id = ?, lop_id = ?, loai_file = ?,
-                    google_drive_id = ?, youtube_id = ?, noi_dung = ?, is_public = ?
+                    google_drive_id = ?, youtube_id = ?, noi_dung = ?, file_path = ?, file_name = ?, is_public = ?
                 WHERE id = ?
             ");
-            $stmt->execute(array($tieuDe, $moTa, $monHocId, $lopId, $loaiFile, $googleDriveId, $youtubeId, $noiDung, $isPublic, $id));
+            $stmt->execute(array($tieuDe, $moTa, $monHocId, $lopId, $loaiFile, $googleDriveId, $youtubeId, $noiDung, $filePath, $fileName, $isPublic, $id));
 
             $message = 'Cập nhật tài liệu thành công!';
             $messageType = 'success';
         }
     } elseif ($action === 'delete') {
         $id = intval($_POST['id']);
+        // Xóa file upload nếu có
+        $stmtFile = $conn->prepare("SELECT file_path FROM tai_lieu WHERE id = ?");
+        $stmtFile->execute(array($id));
+        $docFile = $stmtFile->fetch();
+        if ($docFile && !empty($docFile['file_path']) && file_exists('../' . $docFile['file_path'])) {
+            unlink('../' . $docFile['file_path']);
+        }
         $stmt = $conn->prepare("DELETE FROM tai_lieu WHERE id = ?");
         $stmt->execute(array($id));
         $message = 'Xóa tài liệu thành công!';
@@ -188,11 +318,12 @@ $stmtTL = $conn->query("
 $taiLieuList = $stmtTL->fetchAll();
 
 // Thống kê theo loại
-$countGDrive = $countYoutube = $countEditor = 0;
+$countGDrive = $countYoutube = $countEditor = $countFileUpload = 0;
 foreach ($taiLieuList as $tl) {
-    if (!empty($tl['google_drive_id'])) $countGDrive++;
-    if (!empty($tl['youtube_id'])) $countYoutube++;
-    if ($tl['loai_file'] === 'editor') $countEditor++;
+    if (!empty($tl['file_path'])) $countFileUpload++;
+    elseif (!empty($tl['google_drive_id'])) $countGDrive++;
+    elseif (!empty($tl['youtube_id'])) $countYoutube++;
+    elseif ($tl['loai_file'] === 'editor') $countEditor++;
 }
 ?>
 <!DOCTYPE html>
@@ -248,6 +379,7 @@ foreach ($taiLieuList as $tl) {
             font-size: 0.7rem;
             font-weight: 600;
         }
+        .source-badge.file-upload { background: rgba(245, 158, 11, 0.1); color: #F59E0B; }
         .source-badge.gdrive { background: rgba(59, 130, 246, 0.1); color: #3B82F6; }
         .source-badge.youtube { background: rgba(239, 68, 68, 0.1); color: #EF4444; }
         .source-badge.editor { background: rgba(16, 185, 129, 0.1); color: #10B981; }
@@ -307,10 +439,14 @@ foreach ($taiLieuList as $tl) {
             <?php endif; ?>
 
             <!-- Stats -->
-            <div class="stat-grid-4">
+            <div class="stat-grid-4" style="grid-template-columns: repeat(5, 1fr);">
                 <div class="stat-card" style="background: white; padding: 20px; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
                     <div style="font-size: 2rem; font-weight: 700; color: #667eea;"><?php echo count($taiLieuList); ?></div>
                     <div style="color: #6B7280;">Tổng tài liệu</div>
+                </div>
+                <div class="stat-card" style="background: white; padding: 20px; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                    <div style="font-size: 2rem; font-weight: 700; color: #F59E0B;"><?php echo $countFileUpload; ?></div>
+                    <div style="color: #6B7280;">File upload</div>
                 </div>
                 <div class="stat-card" style="background: white; padding: 20px; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
                     <div style="font-size: 2rem; font-weight: 700; color: #3B82F6;"><?php echo $countGDrive; ?></div>
@@ -354,7 +490,11 @@ foreach ($taiLieuList as $tl) {
                                     $icon = '📁';
                                     $badgeClass = '';
                                     $badgeText = '';
-                                    if (!empty($tl['youtube_id'])) {
+                                    if (!empty($tl['file_path'])) {
+                                        $icons = array('pdf' => '📄', 'word' => '📝', 'excel' => '📊', 'ppt' => '📊', 'image' => '🖼️');
+                                        $icon = isset($icons[$tl['loai_file']]) ? $icons[$tl['loai_file']] : '📁';
+                                        $badgeClass = 'file-upload'; $badgeText = 'File';
+                                    } elseif (!empty($tl['youtube_id'])) {
                                         $icon = '🎬'; $badgeClass = 'youtube'; $badgeText = 'YouTube';
                                     } elseif (!empty($tl['google_drive_id'])) {
                                         $icons = array('pdf' => '📄', 'word' => '📝', 'ppt' => '📊', 'video' => '🎬', 'image' => '🖼️');
@@ -370,7 +510,12 @@ foreach ($taiLieuList as $tl) {
                                                 <span style="font-size: 1.5rem;"><?php echo $icon; ?></span>
                                                 <div>
                                                     <div style="font-weight: 600;"><?php echo htmlspecialchars($tl['tieu_de']); ?></div>
-                                                    <div style="font-size: 0.75rem; color: #9CA3AF;"><?php echo htmlspecialchars($tl['mo_ta']); ?></div>
+                                                    <div style="font-size: 0.75rem; color: #9CA3AF;">
+                                                        <?php echo htmlspecialchars($tl['mo_ta']); ?>
+                                                        <?php if (!empty($tl['file_name'])): ?>
+                                                            <span style="color: #F59E0B;">| <?php echo htmlspecialchars($tl['file_name']); ?></span>
+                                                        <?php endif; ?>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </td>
@@ -383,7 +528,14 @@ foreach ($taiLieuList as $tl) {
                                             <?php echo $tl['is_public'] ? '✅' : '🔒'; ?>
                                         </td>
                                         <td style="padding: 16px; text-align: right;">
-                                            <?php if (!empty($tl['youtube_id'])): ?>
+                                            <?php if (!empty($tl['file_path'])): ?>
+                                                <a href="<?php echo BASE_URL . '/' . $tl['file_path']; ?>" target="_blank" class="btn btn-ghost btn-sm" title="Xem file" style="color: #F59E0B;">
+                                                    <i data-feather="eye"></i>
+                                                </a>
+                                                <a href="<?php echo BASE_URL; ?>/admin/download.php?id=<?php echo $tl['id']; ?>" class="btn btn-ghost btn-sm" title="Tải xuống" style="color: #10B981;">
+                                                    <i data-feather="download"></i>
+                                                </a>
+                                            <?php elseif (!empty($tl['youtube_id'])): ?>
                                                 <a href="https://www.youtube.com/watch?v=<?php echo $tl['youtube_id']; ?>" target="_blank" class="btn btn-ghost btn-sm" title="Xem video">
                                                     <i data-feather="play-circle"></i>
                                                 </a>
@@ -419,9 +571,9 @@ foreach ($taiLieuList as $tl) {
             <button class="modal-close" onclick="closeAddModal()">&times;</button>
             <h3 class="modal-title">Thêm tài liệu mới</h3>
 
-            <form method="POST" id="addDocForm">
+            <form method="POST" id="addDocForm" enctype="multipart/form-data">
                 <input type="hidden" name="action" value="add">
-                <input type="hidden" name="upload_type" id="upload_type" value="google_drive">
+                <input type="hidden" name="upload_type" id="upload_type" value="file_upload">
 
                 <div class="form-group">
                     <label class="form-label">Tiêu đề *</label>
@@ -457,7 +609,10 @@ foreach ($taiLieuList as $tl) {
 
                 <!-- Upload Type Tabs -->
                 <div class="upload-tabs">
-                    <button type="button" class="upload-tab active" onclick="switchUploadTab('google_drive')">
+                    <button type="button" class="upload-tab active" onclick="switchUploadTab('file_upload')">
+                        📎 Upload file
+                    </button>
+                    <button type="button" class="upload-tab" onclick="switchUploadTab('google_drive')">
                         ☁️ Google Drive
                     </button>
                     <button type="button" class="upload-tab" onclick="switchUploadTab('youtube')">
@@ -468,8 +623,20 @@ foreach ($taiLieuList as $tl) {
                     </button>
                 </div>
 
+                <!-- Panel: File Upload -->
+                <div id="panel-file_upload" class="upload-panel active">
+                    <div class="hint-box">
+                        <h4>Upload file trực tiếp</h4>
+                        <p style="margin: 0;">Hỗ trợ: PDF, Word (.doc, .docx), Excel (.xls, .xlsx), PowerPoint (.ppt, .pptx), Hình ảnh. Tối đa 20MB.</p>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Chọn file *</label>
+                        <input type="file" name="doc_file" class="form-input" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.webp" style="padding: 10px;">
+                    </div>
+                </div>
+
                 <!-- Panel: Google Drive -->
-                <div id="panel-google_drive" class="upload-panel active">
+                <div id="panel-google_drive" class="upload-panel">
                     <div class="hint-box">
                         <h4>Hướng dẫn lấy link Google Drive</h4>
                         <ol>
@@ -552,7 +719,7 @@ foreach ($taiLieuList as $tl) {
             <button class="modal-close" onclick="closeEditModal()">&times;</button>
             <h3 class="modal-title">Sửa tài liệu</h3>
 
-            <form method="POST" id="editDocForm">
+            <form method="POST" id="editDocForm" enctype="multipart/form-data">
                 <input type="hidden" name="action" value="edit">
                 <input type="hidden" name="id" id="edit_id">
                 <input type="hidden" name="upload_type" id="edit_upload_type" value="google_drive">
@@ -591,6 +758,9 @@ foreach ($taiLieuList as $tl) {
 
                 <!-- Upload Type Tabs -->
                 <div class="upload-tabs" id="edit_upload_tabs">
+                    <button type="button" class="upload-tab" onclick="switchEditUploadTab('file_upload')">
+                        📎 Upload file
+                    </button>
                     <button type="button" class="upload-tab active" onclick="switchEditUploadTab('google_drive')">
                         ☁️ Google Drive
                     </button>
@@ -600,6 +770,19 @@ foreach ($taiLieuList as $tl) {
                     <button type="button" class="upload-tab" onclick="switchEditUploadTab('editor')">
                         ✏️ Soạn bài
                     </button>
+                </div>
+
+                <!-- Panel: File Upload -->
+                <div id="edit_panel-file_upload" class="upload-panel">
+                    <div class="hint-box">
+                        <h4>Upload file trực tiếp</h4>
+                        <p style="margin: 0;">Hỗ trợ: PDF, Word, Excel, PowerPoint, Hình ảnh. Tối đa 20MB.</p>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Chọn file mới (bỏ trống nếu giữ file cũ)</label>
+                        <input type="file" name="doc_file" class="form-input" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.webp" style="padding: 10px;">
+                        <div id="edit_current_file" style="margin-top: 8px; font-size: 0.85rem; color: #6B7280;"></div>
+                    </div>
                 </div>
 
                 <!-- Panel: Google Drive -->
@@ -685,11 +868,14 @@ foreach ($taiLieuList as $tl) {
         }
 
         function switchUploadTab(type) {
-            document.querySelectorAll('.upload-tab').forEach(function(t) { t.classList.remove('active'); });
-            document.querySelectorAll('.upload-panel').forEach(function(p) { p.classList.remove('active'); });
+            var addModal = document.getElementById('addModal');
+            addModal.querySelectorAll('.upload-tab').forEach(function(t) { t.classList.remove('active'); });
+            addModal.querySelectorAll('.upload-panel').forEach(function(p) { p.classList.remove('active'); });
 
-            var tabIndex = type === 'google_drive' ? 0 : (type === 'youtube' ? 1 : 2);
-            document.querySelectorAll('.upload-tab')[tabIndex].classList.add('active');
+            var tabTypes = ['file_upload', 'google_drive', 'youtube', 'editor'];
+            var tabIndex = tabTypes.indexOf(type);
+            if (tabIndex < 0) tabIndex = 0;
+            addModal.querySelectorAll('.upload-tab')[tabIndex].classList.add('active');
             document.getElementById('panel-' + type).classList.add('active');
             document.getElementById('upload_type').value = type;
 
@@ -779,7 +965,10 @@ foreach ($taiLieuList as $tl) {
 
             // Determine upload type and fill data
             var uploadType = 'google_drive';
-            if (doc.youtube_id && doc.youtube_id !== '') {
+            if (doc.file_path && doc.file_path !== '') {
+                uploadType = 'file_upload';
+                document.getElementById('edit_current_file').innerHTML = 'File hiện tại: <strong>' + (doc.file_name || doc.file_path) + '</strong>';
+            } else if (doc.youtube_id && doc.youtube_id !== '') {
                 uploadType = 'youtube';
                 document.getElementById('edit_youtube_url').value = 'https://www.youtube.com/watch?v=' + doc.youtube_id;
                 previewEditYoutube(document.getElementById('edit_youtube_url').value);
@@ -824,7 +1013,9 @@ foreach ($taiLieuList as $tl) {
             tabs.forEach(function(t) { t.classList.remove('active'); });
             panels.forEach(function(p) { p.classList.remove('active'); });
 
-            var tabIndex = type === 'google_drive' ? 0 : (type === 'youtube' ? 1 : 2);
+            var tabTypes = ['file_upload', 'google_drive', 'youtube', 'editor'];
+            var tabIndex = tabTypes.indexOf(type);
+            if (tabIndex < 0) tabIndex = 0;
             tabs[tabIndex].classList.add('active');
             document.getElementById('edit_panel-' + type).classList.add('active');
             document.getElementById('edit_upload_type').value = type;
