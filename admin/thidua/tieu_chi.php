@@ -37,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $message = 'Mã tiêu chí đã tồn tại!';
             $messageType = 'error';
         } else {
-            $stmt = $conn->prepare("INSERT INTO tieu_chi_thi_dua (ma_tieu_chi, ten_tieu_chi, mo_ta, diem_toi_da, trong_so, thu_tu, trang_thai) VALUES (?, ?, ?, ?, ?, ?, 1)");
+            $stmt = $conn->prepare("INSERT INTO tieu_chi_thi_dua (ma_tieu_chi, ten_tieu_chi, mo_ta, diem_toi_da, trong_so, thu_tu, trang_thai) VALUES (?, ?, ?, ?, ?, ?, 'active')");
             $stmt->execute(array($maTieuChi, $tenTieuChi, $moTa, $diemToiDa, $trongSo, $thuTu));
             $message = 'Thêm tiêu chí thành công!';
             $messageType = 'success';
@@ -50,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $diemToiDa = floatval($_POST['diem_toi_da']);
         $trongSo = intval($_POST['trong_so']);
         $thuTu = intval($_POST['thu_tu']);
-        $trangThai = isset($_POST['trang_thai']) ? 1 : 0;
+        $trangThai = isset($_POST['trang_thai']) ? 'active' : 'inactive';
 
         $stmt = $conn->prepare("UPDATE tieu_chi_thi_dua SET ten_tieu_chi = ?, mo_ta = ?, diem_toi_da = ?, trong_so = ?, thu_tu = ?, trang_thai = ? WHERE id = ?");
         $stmt->execute(array($tenTieuChi, $moTa, $diemToiDa, $trongSo, $thuTu, $trangThai, $id));
@@ -84,7 +84,7 @@ $danhSach = $stmtList->fetchAll();
 // Tính tổng trọng số
 $tongTrongSo = 0;
 foreach ($danhSach as $tc) {
-    if ($tc['trang_thai'] == 1) $tongTrongSo += $tc['trong_so'];
+    if ($tc['trang_thai'] == 1 || $tc['trang_thai'] === 'active') $tongTrongSo += $tc['trong_so'];
 }
 
 $criteriaIcons = array(
@@ -169,7 +169,7 @@ $criteriaColors = array(
                 $color = isset($criteriaColors[$maTc]) ? $criteriaColors[$maTc] : '#6B7280';
                 $weightPct = ($tongTrongSo > 0) ? round(($tc['trong_so'] / $tongTrongSo) * 100) : 0;
             ?>
-            <div class="tc-card <?php echo $tc['trang_thai'] == 0 ? 'opacity-50' : ''; ?>">
+            <div class="tc-card <?php echo ($tc['trang_thai'] == 0 && $tc['trang_thai'] !== 'active') ? 'opacity-50' : ''; ?>">
                 <div class="d-flex align-items-center gap-3">
                     <div class="tc-icon" style="background: <?php echo $color; ?>;">
                         <i class="fas <?php echo $icon; ?>"></i>
@@ -178,7 +178,7 @@ $criteriaColors = array(
                         <div class="d-flex align-items-center gap-2 mb-1">
                             <h5 class="mb-0 fw-bold"><?php echo htmlspecialchars($tc['ten_tieu_chi']); ?></h5>
                             <code class="small"><?php echo htmlspecialchars($tc['ma_tieu_chi']); ?></code>
-                            <?php if ($tc['trang_thai'] == 0): ?>
+                            <?php if ($tc['trang_thai'] == 0 && $tc['trang_thai'] !== 'active'): ?>
                                 <span class="badge bg-secondary">Tắt</span>
                             <?php endif; ?>
                         </div>
@@ -332,7 +332,7 @@ $criteriaColors = array(
             document.getElementById('edit_diem_max').value = data.diem_toi_da;
             document.getElementById('edit_trong_so').value = data.trong_so;
             document.getElementById('edit_thu_tu').value = data.thu_tu;
-            document.getElementById('edit_trang_thai').checked = data.trang_thai == 1;
+            document.getElementById('edit_trang_thai').checked = (data.trang_thai == 1 || data.trang_thai === 'active');
             new bootstrap.Modal(document.getElementById('editModal')).show();
         }
 
