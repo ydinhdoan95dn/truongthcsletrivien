@@ -87,7 +87,7 @@ include 'header.php';
         <span class="icon">📝</span>
         <span class="label">Làm bài</span>
     </a>
-    <a href="<?php echo BASE_URL; ?>/student/thidua/xep_hang.php" class="tab-item">
+    <a href="thidua.php" class="tab-item">
         <span class="icon">🏅</span>
         <span class="label">Thi đua</span>
     </a>

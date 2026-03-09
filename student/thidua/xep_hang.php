@@ -7,7 +7,10 @@
  */
 
 require_once '../../includes/config.php';
+require_once '../../includes/device.php';
 require_once '../../includes/permission_helper.php';
+
+redirectIfMobile(BASE_URL . '/student/mobile/thidua.php');
 
 requireStudent();
 
