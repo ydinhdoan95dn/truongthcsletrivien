@@ -175,7 +175,7 @@ include 'header.php';
             💻 Xem phiên bản Desktop
         </a>
         <br><br>
-        <strong>Tác giả:</strong> Trần Văn Phi Hoàng, Lê Quang Nguyên. GVHD: Đoàn Thị Ngọc Lĩnh
+        <strong>Tác giả:</strong> Trần Văn Phi Hoàng, Nguyễn Quang Nguyên. GVHD: Đoàn Thị Ngọc Lĩnh
     </div>
 </main>
 

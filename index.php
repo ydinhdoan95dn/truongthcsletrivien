@@ -1333,7 +1333,7 @@ $tieuChiList = $stmtTC->fetchAll();
 
             <div class="author-credit">
                 <strong>Tác giả:</strong><br>
-                Trần Văn Phi Hoàng, Lê Quang Nguyên. GVHD: Đoàn Thị Ngọc Lĩnh
+                Trần Văn Phi Hoàng, Nguyễn Quang Nguyên. GVHD: Đoàn Thị Ngọc Lĩnh
             </div>
         </aside>
 

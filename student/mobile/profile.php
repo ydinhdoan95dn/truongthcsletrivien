@@ -137,7 +137,7 @@ include 'header.php';
 
     <!-- Author Credit -->
     <div class="author-credit">
-        <strong>Tác giả:</strong> Trần Văn Phi Hoàng, Lê Quang Nguyên. GVHD: Đoàn Thị Ngọc Lĩnh
+        <strong>Tác giả:</strong> Trần Văn Phi Hoàng, Nguyễn Quang Nguyên. GVHD: Đoàn Thị Ngọc Lĩnh
     </div>
 </main>
 

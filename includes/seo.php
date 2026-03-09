@@ -11,7 +11,7 @@
 define('SEO_TITLE', 'Trường THCS Lê Trí Viễn');
 define('SEO_DESCRIPTION', 'Hệ thống Học tập & Thi đua Trực tuyến - Trường THCS Lê Trí Viễn, Phường Điện Bàn Bắc, TP Đà Nẵng.');
 define('SEO_KEYWORDS', 'trường THCS, lê trí viễn, học trực tuyến, thi trực tuyến, thi đua, học sinh THCS, đà nẵng, điện bàn bắc');
-define('SEO_AUTHOR', 'Trần Văn Phi Hoàng, Lê Quang Nguyên. GVHD: Đoàn Thị Ngọc Lĩnh');
+define('SEO_AUTHOR', 'Trần Văn Phi Hoàng, Nguyễn Quang Nguyên. GVHD: Đoàn Thị Ngọc Lĩnh');
 define('SEO_SITE_NAME', 'Trường THCS Lê Trí Viễn');
 
 /**
