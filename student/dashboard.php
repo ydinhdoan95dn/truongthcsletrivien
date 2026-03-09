@@ -1951,8 +1951,10 @@ $jsData = array(
             var icon = FILE_ICONS[doc.loai_file] || '📁';
             var filePath = doc.file_path || '';
             var gdriveId = doc.google_drive_id || '';
+            var youtubeId = doc.youtube_id || '';
+            var docId = doc.id || 0;
 
-            html += '<div class="item-card" onclick="viewDocument(\'' + gdriveId + '\', \'' + doc.loai_file + '\', \'' + escapeHtml(doc.tieu_de).replace(/'/g, "\\'") + '\', \'' + filePath + '\')">' +
+            html += '<div class="item-card" onclick="viewDocument(\'' + gdriveId + '\', \'' + doc.loai_file + '\', \'' + escapeHtml(doc.tieu_de).replace(/'/g, "\\'") + '\', \'' + filePath + '\', \'' + youtubeId + '\', ' + docId + ')">' +
                 '<div class="item-header">' +
                     '<div class="item-icon" style="background: ' + doc.mau_sac + '20;">' + icon + '</div>' +
                     '<div>' +
@@ -1960,7 +1962,7 @@ $jsData = array(
                         '<div class="item-subtitle">' + escapeHtml(doc.ten_mon) + '</div>' +
                     '</div>' +
                 '</div>' +
-                '<button class="item-btn doc-btn" onclick="event.stopPropagation(); viewDocument(\'' + gdriveId + '\', \'' + doc.loai_file + '\', \'' + escapeHtml(doc.tieu_de).replace(/'/g, "\\'") + '\', \'' + filePath + '\')">' +
+                '<button class="item-btn doc-btn" onclick="event.stopPropagation(); viewDocument(\'' + gdriveId + '\', \'' + doc.loai_file + '\', \'' + escapeHtml(doc.tieu_de).replace(/'/g, "\\'") + '\', \'' + filePath + '\', \'' + youtubeId + '\', ' + docId + ')">' +
                     '<span>👁️</span> Xem tài liệu' +
                 '</button>' +
             '</div>';
@@ -2055,12 +2057,18 @@ $jsData = array(
         gdriveId: '',
         fileType: '',
         title: '',
-        localFile: '',
+        filePath: '',
         downloadUrl: ''
     };
 
-    function viewDocument(gdriveId, fileType, title, filePath) {
-        if (!filePath && !gdriveId) {
+    function viewDocument(gdriveId, fileType, title, filePath, youtubeId, docId) {
+        // Editor type: mở trang xem riêng
+        if (fileType === 'editor') {
+            window.open(APP.baseUrl + '/student/mobile/document-view.php?id=' + docId, '_blank');
+            return;
+        }
+
+        if (!filePath && !gdriveId && !youtubeId) {
             alert('Tài liệu chưa có file đính kèm');
             return;
         }
@@ -2093,41 +2101,38 @@ $jsData = array(
         var downloadUrl = '';
 
         if (filePath) {
-            // File local
+            // File local upload
             var fileUrl = APP.baseUrl + '/' + filePath;
             downloadUrl = fileUrl;
 
             if (fileType === 'pdf') {
-                // PDF có thể xem trực tiếp
                 viewUrl = fileUrl;
-            } else if (fileType === 'word' || fileType === 'ppt') {
-                // Dùng Google Docs Viewer cho Word/PPT
+            } else if (fileType === 'word' || fileType === 'ppt' || fileType === 'excel') {
                 viewUrl = 'https://docs.google.com/gview?url=' + encodeURIComponent(fileUrl) + '&embedded=true';
             } else if (fileType === 'image') {
-                // Image hiển thị trực tiếp
                 showImageViewer(fileUrl);
                 return;
             } else if (fileType === 'video') {
-                // Video hiển thị trực tiếp
                 showVideoViewer(fileUrl);
                 return;
             } else {
                 viewUrl = fileUrl;
             }
+        } else if (youtubeId) {
+            // YouTube video
+            viewUrl = 'https://www.youtube.com/embed/' + youtubeId + '?rel=0';
+            downloadUrl = '';
         } else if (gdriveId) {
             // File từ Google Drive
             downloadUrl = 'https://drive.google.com/uc?export=download&id=' + gdriveId;
 
             if (fileType === 'pdf' || fileType === 'word' || fileType === 'ppt') {
-                // Dùng Google Drive preview
                 viewUrl = 'https://drive.google.com/file/d/' + gdriveId + '/preview';
             } else if (fileType === 'image') {
-                // Image từ Drive
                 var imgUrl = 'https://drive.google.com/uc?export=view&id=' + gdriveId;
                 showImageViewer(imgUrl);
                 return;
             } else if (fileType === 'video') {
-                // Video từ Drive
                 viewUrl = 'https://drive.google.com/file/d/' + gdriveId + '/preview';
             } else {
                 viewUrl = 'https://drive.google.com/file/d/' + gdriveId + '/preview';
